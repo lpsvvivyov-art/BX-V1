@@ -1,0 +1,878 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>BX V1</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Vazirmatn:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#0B0F14;
+  --panel:#121820;
+  --panel-2:#161E27;
+  --line:#232C36;
+  --line-soft:#1B232C;
+  --text:#E7EDF3;
+  --text-dim:#8A97A5;
+  --text-faint:#5A6673;
+  --accent:#00D9A3;
+  --accent-dim:#0A9E78;
+  --accent-glow:rgba(0,217,163,0.16);
+  --warn:#FF8A3D;
+  --danger:#FF5D5D;
+  --mono:'JetBrains Mono', monospace;
+  --sans:'Vazirmatn', sans-serif;
+}
+*{box-sizing:border-box; margin:0; padding:0;}
+html,body{height:100%;}
+body{
+  background:
+    radial-gradient(1200px 600px at 15% -10%, rgba(0,217,163,0.06), transparent 60%),
+    radial-gradient(900px 500px at 100% 0%, rgba(0,140,255,0.05), transparent 55%),
+    var(--bg);
+  color:var(--text);
+  font-family:var(--sans);
+  min-height:100vh;
+  background-attachment:fixed;
+}
+::selection{ background:var(--accent-glow); color:var(--accent); }
+
+/* ===== scrollbar ===== */
+::-webkit-scrollbar{width:8px; height:8px;}
+::-webkit-scrollbar-track{background:transparent;}
+::-webkit-scrollbar-thumb{background:var(--line); border-radius:4px;}
+::-webkit-scrollbar-thumb:hover{background:var(--text-faint);}
+
+/* ===== LOCK SCREEN ===== */
+#lockScreen{
+  position:fixed; inset:0; z-index:100;
+  display:flex; align-items:center; justify-content:center;
+  background:var(--bg);
+  background-image:
+    radial-gradient(700px 400px at 50% 20%, rgba(0,217,163,0.07), transparent 60%);
+}
+.lock-grid-line{
+  position:absolute; inset:0; pointer-events:none;
+  background-image:
+    linear-gradient(rgba(255,255,255,0.025) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255,255,255,0.025) 1px, transparent 1px);
+  background-size:42px 42px;
+  mask-image:radial-gradient(circle at 50% 30%, black, transparent 70%);
+}
+.lock-box{
+  position:relative;
+  width:100%; max-width:380px;
+  padding:0 24px;
+  text-align:center;
+  animation:lockIn .5s cubic-bezier(.2,.8,.2,1);
+}
+@keyframes lockIn{ from{opacity:0; transform:translateY(10px);} to{opacity:1; transform:translateY(0);} }
+.lock-node{
+  width:56px; height:56px; margin:0 auto 22px;
+  border:1px solid var(--line);
+  background:var(--panel);
+  border-radius:14px;
+  display:flex; align-items:center; justify-content:center;
+  box-shadow:0 0 0 1px rgba(255,255,255,0.02) inset, 0 20px 40px -20px rgba(0,217,163,0.15);
+}
+.lock-node svg{width:24px; height:24px; stroke:var(--accent);}
+.lock-title{
+  font-family:var(--mono); font-weight:700; font-size:22px;
+  letter-spacing:2px; color:var(--text); margin-bottom:6px;
+}
+.lock-title span{color:var(--accent);}
+.lock-sub{
+  font-size:13px; color:var(--text-dim); margin-bottom:32px;
+  font-family:var(--mono); letter-spacing:0.5px;
+}
+.lock-input-wrap{
+  position:relative; margin-bottom:14px;
+}
+#lockInput{
+  width:100%;
+  background:var(--panel);
+  border:1px solid var(--line);
+  border-radius:10px;
+  padding:15px 46px 15px 16px;
+  color:var(--text);
+  font-family:var(--mono);
+  font-size:16px;
+  letter-spacing:3px;
+  text-align:center;
+  outline:none;
+  transition:border-color .15s, box-shadow .15s;
+}
+#lockInput:focus{
+  border-color:var(--accent-dim);
+  box-shadow:0 0 0 3px var(--accent-glow);
+}
+#lockInput.shake{ animation:shake .35s; border-color:var(--danger); }
+@keyframes shake{
+  10%,90%{transform:translateX(-1px);}
+  20%,80%{transform:translateX(2px);}
+  30%,50%,70%{transform:translateX(-4px);}
+  40%,60%{transform:translateX(4px);}
+}
+.lock-icon{
+  position:absolute; left:14px; top:50%; transform:translateY(-50%);
+  width:18px; height:18px; stroke:var(--text-faint);
+}
+#lockBtn{
+  width:100%;
+  background:var(--accent);
+  color:#04140F;
+  border:none;
+  border-radius:10px;
+  padding:14px;
+  font-family:var(--sans);
+  font-weight:700;
+  font-size:14.5px;
+  cursor:pointer;
+  transition:filter .15s, transform .1s;
+}
+#lockBtn:hover{ filter:brightness(1.08); }
+#lockBtn:active{ transform:scale(0.98); }
+.lock-error{
+  height:18px; margin-top:12px;
+  font-size:12.5px; color:var(--danger);
+  font-family:var(--mono); opacity:0; transition:opacity .2s;
+}
+.lock-error.show{ opacity:1; }
+.lock-foot{
+  margin-top:40px; font-size:11px; color:var(--text-faint);
+  font-family:var(--mono); letter-spacing:1px;
+}
+
+/* ===== APP SHELL ===== */
+#app{ display:none; min-height:100vh; }
+#app.visible{ display:block; animation:appIn .4s ease; }
+@keyframes appIn{ from{opacity:0;} to{opacity:1;} }
+
+.topbar{
+  position:sticky; top:0; z-index:20;
+  display:flex; align-items:center; justify-content:space-between;
+  padding:16px 28px;
+  background:rgba(11,15,20,0.85);
+  backdrop-filter:blur(10px);
+  border-bottom:1px solid var(--line-soft);
+}
+.brand{ display:flex; align-items:center; gap:12px; }
+.brand-mark{
+  width:38px; height:38px; border-radius:10px;
+  background:linear-gradient(155deg, var(--panel-2), var(--panel));
+  border:1px solid var(--line);
+  display:flex; align-items:center; justify-content:center;
+  position:relative;
+}
+.brand-mark::after{
+  content:''; position:absolute; inset:0; border-radius:10px;
+  box-shadow:0 0 0 1px rgba(0,217,163,0.15) inset;
+}
+.brand-mark svg{ width:19px; height:19px; stroke:var(--accent); }
+.brand-text{ font-family:var(--mono); }
+.brand-text .name{ font-weight:700; font-size:15px; letter-spacing:1.5px; color:var(--text); }
+.brand-text .tag{ font-size:10.5px; color:var(--text-faint); letter-spacing:1px; }
+.status-pill{
+  display:flex; align-items:center; gap:8px;
+  font-family:var(--mono); font-size:11.5px; color:var(--text-dim);
+  background:var(--panel); border:1px solid var(--line);
+  padding:7px 13px; border-radius:100px;
+}
+.status-dot{
+  width:7px; height:7px; border-radius:50%; background:var(--accent);
+  box-shadow:0 0 8px var(--accent);
+  animation:pulse 2s infinite;
+}
+@keyframes pulse{ 0%,100%{opacity:1;} 50%{opacity:0.4;} }
+
+.wrap{
+  max-width:1180px; margin:0 auto;
+  padding:36px 28px 80px;
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:24px;
+}
+@media (max-width:920px){
+  .wrap{ grid-template-columns:1fr; padding:24px 16px 60px; }
+}
+
+.page-head{ grid-column:1/-1; margin-bottom:6px; }
+.page-head .eyebrow{
+  font-family:var(--mono); font-size:11.5px; color:var(--accent);
+  letter-spacing:2px; margin-bottom:8px; display:block;
+}
+.page-head h1{ font-size:26px; font-weight:800; letter-spacing:-0.3px; }
+.page-head p{ color:var(--text-dim); font-size:13.5px; margin-top:6px; }
+
+.card{
+  background:var(--panel);
+  border:1px solid var(--line);
+  border-radius:16px;
+  padding:24px;
+}
+.card-h{
+  display:flex; align-items:center; justify-content:space-between;
+  margin-bottom:20px;
+}
+.card-h h2{ font-size:14.5px; font-weight:700; }
+.card-h .idx{
+  font-family:var(--mono); font-size:10.5px; color:var(--text-faint);
+  border:1px solid var(--line); padding:3px 8px; border-radius:6px;
+}
+
+.field{ margin-bottom:18px; }
+.field:last-child{ margin-bottom:0; }
+.field label{
+  display:block; font-size:12.5px; font-weight:600;
+  color:var(--text-dim); margin-bottom:8px;
+}
+.field label .req{ color:var(--accent); }
+.field-hint{ font-size:11px; color:var(--text-faint); margin-top:6px; font-family:var(--mono); }
+
+input[type="text"], input[type="number"], input[type="date"], select{
+  width:100%;
+  background:var(--panel-2);
+  border:1px solid var(--line);
+  border-radius:9px;
+  padding:12px 14px;
+  color:var(--text);
+  font-family:var(--sans);
+  font-size:13.5px;
+  outline:none;
+  transition:border-color .15s, box-shadow .15s;
+}
+input::placeholder{ color:var(--text-faint); }
+input:focus, select:focus{
+  border-color:var(--accent-dim);
+  box-shadow:0 0 0 3px var(--accent-glow);
+}
+select{ cursor:pointer; }
+input[type="date"]{ color-scheme:dark; }
+
+.row2{ display:grid; grid-template-columns:1fr 1fr; gap:14px; }
+@media (max-width:520px){ .row2{ grid-template-columns:1fr; } }
+
+/* country select custom */
+.country-grid{
+  display:grid; grid-template-columns:repeat(3, 1fr); gap:8px;
+}
+@media (max-width:560px){ .country-grid{ grid-template-columns:repeat(2, 1fr); } }
+.country-opt{
+  display:flex; align-items:center; gap:8px;
+  background:var(--panel-2);
+  border:1px solid var(--line);
+  border-radius:9px;
+  padding:10px 10px;
+  cursor:pointer;
+  font-size:12.5px;
+  transition:border-color .15s, background .15s;
+  user-select:none;
+}
+.country-opt .flag{ font-size:17px; line-height:1; }
+.country-opt span.cname{ font-weight:600; }
+.country-opt small{ display:block; color:var(--text-faint); font-family:var(--mono); font-size:9.5px; }
+.country-opt:hover{ border-color:var(--text-faint); }
+.country-opt.active{
+  border-color:var(--accent);
+  background:linear-gradient(155deg, rgba(0,217,163,0.1), rgba(0,217,163,0.03));
+}
+.country-opt.active span.cname{ color:var(--accent); }
+
+/* dns type toggle */
+.seg{
+  display:flex; background:var(--panel-2); border:1px solid var(--line);
+  border-radius:9px; padding:3px; gap:3px;
+}
+.seg button{
+  flex:1; border:none; background:transparent; color:var(--text-dim);
+  font-family:var(--mono); font-size:12px; font-weight:600;
+  padding:9px; border-radius:7px; cursor:pointer; transition:all .15s;
+}
+.seg button.active{ background:var(--accent); color:#04140F; }
+
+.btn-generate{
+  width:100%; margin-top:22px;
+  background:var(--accent);
+  color:#04140F;
+  border:none; border-radius:10px;
+  padding:16px; font-family:var(--sans); font-weight:800; font-size:14.5px;
+  cursor:pointer; display:flex; align-items:center; justify-content:center; gap:10px;
+  transition:filter .15s, transform .1s;
+  box-shadow:0 14px 30px -14px rgba(0,217,163,0.45);
+}
+.btn-generate:hover{ filter:brightness(1.07); }
+.btn-generate:active{ transform:scale(0.99); }
+.btn-generate svg{ width:17px; height:17px; }
+.btn-generate:disabled{ opacity:.5; cursor:not-allowed; filter:none; box-shadow:none; }
+
+/* ===== OUTPUT PANEL ===== */
+.output-card{ display:flex; flex-direction:column; }
+.empty-state{
+  flex:1; display:flex; flex-direction:column; align-items:center; justify-content:center;
+  text-align:center; padding:50px 20px; color:var(--text-faint);
+}
+.empty-state svg{ width:34px; height:34px; stroke:var(--text-faint); margin-bottom:14px; opacity:.6; }
+.empty-state p{ font-size:12.5px; font-family:var(--mono); line-height:1.9; }
+
+.spec-list{ display:none; }
+.spec-list.visible{ display:block; }
+.spec-row{
+  display:flex; align-items:center; justify-content:space-between;
+  padding:11px 0; border-bottom:1px solid var(--line-soft);
+  font-size:12.5px;
+}
+.spec-row:last-child{ border-bottom:none; }
+.spec-row .k{ color:var(--text-dim); }
+.spec-row .v{ font-family:var(--mono); font-weight:600; color:var(--text); direction:ltr; }
+.spec-row .v.accent{ color:var(--accent); }
+.spec-row .v .flag{ margin-left:5px; }
+
+.terminal{
+  margin-top:18px;
+  background:#080B0F;
+  border:1px solid var(--line);
+  border-radius:12px;
+  overflow:hidden;
+  display:none;
+}
+.terminal.visible{ display:block; }
+.term-bar{
+  display:flex; align-items:center; gap:8px;
+  padding:10px 14px;
+  background:var(--panel-2);
+  border-bottom:1px solid var(--line);
+}
+.term-dot{ width:9px; height:9px; border-radius:50%; }
+.term-dot.r{ background:#FF5D5D; } .term-dot.y{ background:#FFBD44; } .term-dot.g{ background:#00CA4E; }
+.term-label{
+  margin-right:auto; font-family:var(--mono); font-size:10.5px; color:var(--text-faint);
+  direction:ltr;
+}
+.term-body{
+  padding:16px; font-family:var(--mono); font-size:12px; line-height:1.9;
+  color:var(--accent); direction:ltr; text-align:left;
+  max-height:260px; overflow-y:auto; white-space:pre-wrap; word-break:break-all;
+}
+.term-body .k{ color:#5FA8FF; }
+.term-body .c{ color:var(--text-faint); }
+
+.btn-row{ display:flex; gap:10px; margin-top:16px; }
+.btn-row.hidden{ display:none; }
+.btn-download, .btn-copy{
+  flex:1; border-radius:9px; padding:13px; font-family:var(--sans);
+  font-weight:700; font-size:13px; cursor:pointer; border:1px solid var(--line);
+  display:flex; align-items:center; justify-content:center; gap:8px;
+  transition:all .15s;
+}
+.btn-download{ background:var(--accent); color:#04140F; border:none; }
+.btn-download:hover{ filter:brightness(1.07); }
+.btn-copy{ background:var(--panel-2); color:var(--text); }
+.btn-copy:hover{ border-color:var(--text-faint); }
+.btn-download svg, .btn-copy svg{ width:15px; height:15px; }
+
+.toast{
+  position:fixed; bottom:24px; left:50%; transform:translateX(-50%) translateY(20px);
+  background:var(--panel-2); border:1px solid var(--accent-dim);
+  color:var(--text); padding:12px 20px; border-radius:10px;
+  font-size:12.5px; font-family:var(--mono);
+  opacity:0; pointer-events:none; transition:all .25s;
+  z-index:200; display:flex; align-items:center; gap:8px;
+  box-shadow:0 10px 30px rgba(0,0,0,0.4);
+}
+.toast.show{ opacity:1; transform:translateX(-50%) translateY(0); }
+.toast svg{ width:15px; height:15px; stroke:var(--accent); }
+
+.count-badge{
+  font-family:var(--mono); font-size:10px; color:var(--text-faint);
+  margin-top:8px;
+}
+</style>
+</head>
+<body>
+
+<!-- LOCK SCREEN -->
+<div id="lockScreen">
+  <div class="lock-grid-line"></div>
+  <div class="lock-box">
+    <div class="lock-node">
+      <svg viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="10" rx="2"/><path d="M7 11V7a5 5 0 0110 0v4"/></svg>
+    </div>
+    <div class="lock-title">BX <span>V1</span></div>
+    <div class="lock-sub">دسترسی محدود — رمز عبور را وارد کنید</div>
+    <div class="lock-input-wrap">
+      <svg class="lock-icon" viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 8v4M12 16h.01"/></svg>
+      <input type="password" id="lockInput" placeholder="••••••" maxlength="20" autocomplete="off">
+    </div>
+    <button id="lockBtn">ورود به پنل</button>
+    <div class="lock-error" id="lockError">رمز عبور اشتباه است</div>
+    <div class="lock-foot">BX-NETWORK · SECURE ACCESS LAYER</div>
+  </div>
+</div>
+
+<!-- APP -->
+<div id="app">
+  <div class="topbar">
+    <div class="brand">
+      <div class="brand-mark">
+        <svg viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="10" rx="2"/><path d="M7 11V7a5 5 0 0110 0v4"/></svg>
+      </div>
+      <div class="brand-text">
+        <div class="name">BX <span style="color:var(--accent)">V1</span></div>
+        <div class="tag">CONFIG GENERATOR</div>
+      </div>
+    </div>
+    <div class="status-pill"><span class="status-dot"></span> سرور آنلاین</div>
+  </div>
+
+  <div class="wrap">
+    <div class="page-head">
+      <span class="eyebrow">WIREGUARD PROVISIONING</span>
+      <h1>ساخت کانفیگ وایرگارد</h1>
+    </div>
+
+    <!-- FORM CARD -->
+    <div class="card">
+      <div class="card-h">
+        <h2>مشخصات کانفیگ</h2>
+        <span class="idx">01 / FORM</span>
+      </div>
+
+      <div class="field">
+        <label>نام کانفیگ <span class="req">*</span></label>
+        <input type="text" id="cfgName" placeholder="مثلاً: reza30" autocomplete="off">
+        <div class="field-hint">فایل با همین نام و پسوند .conf دانلود می‌شود</div>
+      </div>
+
+      <div class="row2">
+        <div class="field">
+          <label>حجم کانفیگ (گیگابایت) <span class="req">*</span></label>
+          <input type="number" id="cfgVolume" placeholder="مثلاً: 30" min="1" step="1">
+        </div>
+        <div class="field">
+          <label>تاریخ انقضا <span class="req">*</span></label>
+          <input type="date" id="cfgExpire">
+        </div>
+      </div>
+
+      <div class="field">
+        <label>لوکیشن سرور <span class="req">*</span></label>
+        <div class="country-grid" id="countryGrid"></div>
+      </div>
+
+      <div class="row2">
+        <div class="field">
+          <label>نوع DNS اضافه</label>
+          <div class="seg" id="dnsSeg">
+            <button class="active" data-type="v4">IPv4</button>
+            <button data-type="v6">IPv6</button>
+          </div>
+        </div>
+        <div class="field">
+          <label>تعداد DNS تصادفی</label>
+          <input type="number" id="dnsCount" placeholder="مثلاً: 3" min="0" max="8" value="3">
+        </div>
+      </div>
+
+      <button class="btn-generate" id="genBtn">
+        <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"/></svg>
+        ساخت کانفیگ جدید
+      </button>
+    </div>
+
+    <!-- OUTPUT CARD -->
+    <div class="card output-card">
+      <div class="card-h">
+        <h2>پیش‌نمایش کانفیگ</h2>
+        <span class="idx">02 / OUTPUT</span>
+      </div>
+
+      <div class="empty-state" id="emptyState">
+        <svg viewBox="0 0 24 24" fill="none" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><path d="M14 2v6h6"/></svg>
+        <p>هنوز کانفیگی ساخته نشده&#8204;است<br>فرم را تکمیل و دکمه «ساخت کانفیگ جدید» را بزنید</p>
+      </div>
+
+      <div class="spec-list" id="specList">
+        <div class="spec-row"><span class="k">نام</span><span class="v" id="specName">—</span></div>
+        <div class="spec-row"><span class="k">لوکیشن</span><span class="v" id="specCountry">—</span></div>
+        <div class="spec-row"><span class="k">حجم</span><span class="v" id="specVolume">—</span></div>
+        <div class="spec-row"><span class="k">انقضا</span><span class="v" id="specExpire">—</span></div>
+        <div class="spec-row"><span class="k">پورت</span><span class="v" id="specPort">—</span></div>
+        <div class="spec-row"><span class="k">Endpoint</span><span class="v" id="specEndpoint">—</span></div>
+        <div class="spec-row"><span class="k">تعداد DNS</span><span class="v accent" id="specDnsCount">—</span></div>
+        <div class="spec-row"><span class="k">شناسه یکتا</span><span class="v" id="specUid">—</span></div>
+      </div>
+
+      <div class="terminal" id="terminal">
+        <div class="term-bar">
+          <span class="term-dot r"></span><span class="term-dot y"></span><span class="term-dot g"></span>
+          <span class="term-label" id="termFileName">config.conf</span>
+        </div>
+        <div class="term-body" id="termBody"></div>
+      </div>
+
+      <div class="btn-row hidden" id="btnRow">
+        <button class="btn-download" id="downloadBtn">
+          <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M7 10l5 5 5-5M12 15V3"/></svg>
+          دانلود کانفیگ
+        </button>
+        <button class="btn-copy" id="copyBtn">
+          <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg>
+          کپی متن
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast">
+  <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>
+  <span id="toastMsg">انجام شد</span>
+</div>
+
+<script>
+/* ============ LOCK ============ */
+const PASSWORD = "BXNOD";
+const lockInput = document.getElementById('lockInput');
+const lockBtn = document.getElementById('lockBtn');
+const lockError = document.getElementById('lockError');
+const lockScreen = document.getElementById('lockScreen');
+const app = document.getElementById('app');
+
+function tryUnlock(){
+  if(lockInput.value === PASSWORD){
+    lockScreen.style.transition = 'opacity .35s';
+    lockScreen.style.opacity = '0';
+    setTimeout(()=>{
+      lockScreen.style.display = 'none';
+      app.classList.add('visible');
+      setDefaultDate();
+    }, 350);
+  } else {
+    lockError.classList.add('show');
+    lockInput.classList.add('shake');
+    setTimeout(()=>lockInput.classList.remove('shake'), 350);
+  }
+}
+lockBtn.addEventListener('click', tryUnlock);
+lockInput.addEventListener('keydown', e=>{ if(e.key==='Enter') tryUnlock(); });
+lockInput.addEventListener('input', ()=> lockError.classList.remove('show'));
+
+/* ============ COUNTRY DATA ============ */
+// هر کشور: نام، پرچم، کد اختصاصی برای DNS، رنج آدرس، پورت پایه
+// endpointOctets: رنج‌های IPv4 واقع‌گرا (بلوک‌های عمومی شناخته‌شده هر کشور) برای ساخت Endpoint تصادفی
+const COUNTRIES = [
+  { id:'de', name:'آلمان',   flag:'🇩🇪', code:'DE', portBase:51800, netBase:[10,36,10], epOctets:[[85,88],[46,52]] },
+  { id:'tr', name:'ترکیه',   flag:'🇹🇷', code:'TR', portBase:51820, netBase:[10,36,20], epOctets:[[78,88],[31,45]] },
+  { id:'ae', name:'امارات',  flag:'🇦🇪', code:'AE', portBase:51840, netBase:[10,36,30], epOctets:[[94,95],[176,190]] },
+  { id:'qa', name:'قطر',     flag:'🇶🇦', code:'QA', portBase:51860, netBase:[10,36,40], epOctets:[[37,37],[210,220]] },
+  { id:'ru', name:'روسیه',   flag:'🇷🇺', code:'RU', portBase:51880, netBase:[10,36,50], epOctets:[[95,95],[178,182]] },
+  { id:'fr', name:'فرانسه',  flag:'🇫🇷', code:'FR', portBase:51900, netBase:[10,36,60], epOctets:[[51,51],[195,199]] },
+  { id:'us', name:'آمریکا',  flag:'🇺🇸', code:'US', portBase:51920, netBase:[10,36,70], epOctets:[[104,107],[172,174]] },
+  { id:'ly', name:'لیبی',    flag:'🇱🇾', code:'LY', portBase:51940, netBase:[10,36,80], epOctets:[[41,41],[196,197]] },
+  { id:'ca', name:'کانادا',  flag:'🇨🇦', code:'CA', portBase:51960, netBase:[10,36,90], epOctets:[[142,144],[192,199]] },
+];
+
+const grid = document.getElementById('countryGrid');
+let selectedCountry = null;
+
+COUNTRIES.forEach(c=>{
+  const el = document.createElement('div');
+  el.className = 'country-opt';
+  el.dataset.id = c.id;
+  el.innerHTML = `<span class="flag">${c.flag}</span><div><span class="cname">${c.name}</span><small>${c.code}</small></div>`;
+  el.addEventListener('click', ()=>{
+    document.querySelectorAll('.country-opt').forEach(o=>o.classList.remove('active'));
+    el.classList.add('active');
+    selectedCountry = c;
+  });
+  grid.appendChild(el);
+});
+
+/* ============ DNS TYPE TOGGLE ============ */
+let dnsType = 'v4';
+document.querySelectorAll('#dnsSeg button').forEach(btn=>{
+  btn.addEventListener('click', ()=>{
+    document.querySelectorAll('#dnsSeg button').forEach(b=>b.classList.remove('active'));
+    btn.classList.add('active');
+    dnsType = btn.dataset.type;
+  });
+});
+
+/* ============ DEFAULT DATE ============ */
+function setDefaultDate(){
+  const d = new Date();
+  d.setMonth(d.getMonth()+1);
+  document.getElementById('cfgExpire').value = d.toISOString().split('T')[0];
+  document.getElementById('cfgExpire').min = new Date().toISOString().split('T')[0];
+}
+
+/* ============ KEY / ADDRESS GENERATION ============ */
+function randomBase64Key(){
+  const bytes = new Uint8Array(32);
+  crypto.getRandomValues(bytes);
+  // WireGuard base64 keys always end in "=" (32 bytes -> 44 base64 chars)
+  let bin = '';
+  bytes.forEach(b => bin += String.fromCharCode(b));
+  return btoa(bin);
+}
+
+function randInt(min, max){ return Math.floor(Math.random()*(max-min+1))+min; }
+
+// جلوگیری از تکرار کانفیگ برای هر کشور: ذخیره آدرس‌ها/پورت‌های استفاده‌شده در حافظه
+const usedRegistry = {}; // country.id -> { addresses:Set, ports:Set, ids:Set }
+function getRegistry(id){
+  if(!usedRegistry[id]) usedRegistry[id] = { addresses:new Set(), ports:new Set() };
+  return usedRegistry[id];
+}
+
+function generateUniqueAddress(country){
+  const reg = getRegistry(country.id);
+  let addr;
+  do{
+    const last = randInt(2, 254);
+    addr = `${country.netBase[0]}.${country.netBase[1]}.${country.netBase[2]}.${last}`;
+  } while(reg.addresses.has(addr));
+  reg.addresses.add(addr);
+  return addr;
+}
+
+function generateUniquePort(country){
+  const reg = getRegistry(country.id);
+  let port;
+  do{
+    port = country.portBase + randInt(0, 199);
+  } while(reg.ports.has(port));
+  reg.ports.add(port);
+  return port;
+}
+
+function generateAllowedIpAddress(country){
+  const last = randInt(2, 254);
+  const third = randInt(0,255);
+  return `10.166.${third}.${last}/32`;
+}
+
+// ساخت Endpoint تصادفی با ساختار استاندارد IPv4:PORT، مخصوص کشور و بدون تکرار
+function generateUniqueEndpoint(country){
+  const reg = getRegistry(country.id);
+  if(!reg.endpoints) reg.endpoints = new Set();
+  const [r1, r2] = country.epOctets;
+  let ip, port, key;
+  let guard = 0;
+  do{
+    guard++;
+    const o1 = randInt(r1[0], r1[1]);
+    const o2 = randInt(r2[0], r2[1]);
+    const o3 = randInt(0, 255);
+    const o4 = randInt(1, 254);
+    ip = `${o1}.${o2}.${o3}.${o4}`;
+    port = randInt(51000, 65000);
+    key = `${ip}:${port}`;
+  } while(reg.endpoints.has(key) && guard < 300);
+  reg.endpoints.add(key);
+  return key;
+}
+
+// تولید DNS IPv4 اختصاصی و غیرتکراری بر اساس کد کشور
+function generateCountryDnsV4(country, count, usedSet){
+  const results = [];
+  let guard = 0;
+  while(results.length < count && guard < 500){
+    guard++;
+    const o3 = randInt(10, 250);
+    const o4 = randInt(2, 250);
+    const ip = `172.${64 + COUNTRIES.findIndex(c=>c.id===country.id)}.${o3}.${o4}`;
+    if(!usedSet.has(ip)){
+      usedSet.add(ip);
+      results.push(ip);
+    }
+  }
+  return results;
+}
+
+// تولید DNS IPv6 اختصاصی و غیرتکراری بر اساس کد کشور (hex مشتق از کد کشور)
+function generateCountryDnsV6(country, count, usedSet){
+  const results = [];
+  const codeHex = [...country.code].map(ch=>ch.charCodeAt(0).toString(16)).join('');
+  let guard = 0;
+  while(results.length < count && guard < 500){
+    guard++;
+    const seg = () => randInt(0, 65535).toString(16).padStart(4,'0');
+    const ip = `${codeHex}:${seg()}:${seg()}:${seg()}:${seg()}:${seg()}:${seg()}:${seg()}`;
+    if(!usedSet.has(ip)){
+      usedSet.add(ip);
+      results.push(ip);
+    }
+  }
+  return results;
+}
+
+const FIXED_DNS = ["78.157.42.100","78.157.42.101","10.202.10.10","10.202.10.11"];
+
+/* ============ GENERATE CONFIG ============ */
+let currentConfig = null;
+
+document.getElementById('genBtn').addEventListener('click', async ()=>{
+  const name = document.getElementById('cfgName').value.trim();
+  const volume = document.getElementById('cfgVolume').value.trim();
+  const expire = document.getElementById('cfgExpire').value;
+  const dnsCount = parseInt(document.getElementById('dnsCount').value) || 0;
+
+  if(!name){ shakeField('cfgName'); return toast('نام کانفیگ را وارد کنید', true); }
+  if(!volume || Number(volume) <= 0){ shakeField('cfgVolume'); return toast('حجم کانفیگ را وارد کنید', true); }
+  if(!expire){ shakeField('cfgExpire'); return toast('تاریخ انقضا را انتخاب کنید', true); }
+  if(!selectedCountry){ return toast('یک لوکیشن انتخاب کنید', true); }
+  if(dnsCount < 0 || dnsCount > 8){ shakeField('dnsCount'); return toast('تعداد DNS باید بین ۰ تا ۸ باشد', true); }
+
+  const country = selectedCountry;
+  const address = generateUniqueAddress(country);
+  const port = generateUniquePort(country);
+  const privateKey = randomBase64Key();
+  const publicKey = randomBase64Key();
+  const allowedIp = generateAllowedIpAddress(country);
+  const endpoint = generateUniqueEndpoint(country);
+  const uid = (Date.now().toString(36) + Math.random().toString(36).slice(2,7)).toUpperCase();
+
+  // DNS اختصاصی کشور - غیرتکراری
+  const reg = getRegistry(country.id);
+  if(!reg.dnsV4Used) reg.dnsV4Used = new Set();
+  if(!reg.dnsV6Used) reg.dnsV6Used = new Set();
+
+  let extraDns = [];
+  if(dnsCount > 0){
+    extraDns = dnsType === 'v4'
+      ? generateCountryDnsV4(country, dnsCount, reg.dnsV4Used)
+      : generateCountryDnsV6(country, dnsCount, reg.dnsV6Used);
+  }
+
+  const allDns = [...FIXED_DNS, ...extraDns];
+
+  const persianDate = new Date(expire).toLocaleDateString('fa-IR');
+  const fileName = `${sanitizeFileName(name)}.conf`;
+
+  const configText =
+`[Interface]
+Address = ${address}/32
+DNS = ${allDns.join(', ')}
+ListenPort = ${port}
+PrivateKey = ${privateKey}
+MTU = 1280
+
+[Peer]
+AllowedIPs = ${allowedIp}
+PublicKey = ${publicKey}
+Endpoint = ${endpoint}
+PersistentKeepalive = 25`;
+
+  currentConfig = { fileName, configText };
+
+  // پر کردن کادر مشخصات
+  document.getElementById('specName').textContent = name;
+  document.getElementById('specCountry').innerHTML = `${country.name} <span class="flag">${country.flag}</span>`;
+  document.getElementById('specVolume').textContent = `${volume} GB`;
+  document.getElementById('specExpire').textContent = persianDate;
+  document.getElementById('specPort').textContent = port;
+  document.getElementById('specEndpoint').textContent = endpoint;
+  document.getElementById('specDnsCount').textContent = `${allDns.length} آدرس (${dnsType.toUpperCase()})`;
+  document.getElementById('specUid').textContent = uid;
+
+  document.getElementById('emptyState').style.display = 'none';
+  document.getElementById('specList').classList.add('visible');
+
+  // ترمینال با هایلایت ساده
+  const term = document.getElementById('terminal');
+  term.classList.add('visible');
+  document.getElementById('termFileName').textContent = fileName;
+  document.getElementById('termBody').innerHTML = highlightConfig(configText);
+
+  document.getElementById('btnRow').classList.remove('hidden');
+
+  toast('در حال ساخت لینک اشتراک...');
+  try {
+    let adminToken = sessionStorage.getItem('BX_ADMIN_TOKEN') || '';
+    if(!adminToken){ adminToken = prompt('توکن مدیر Cloudflare را وارد کنید:') || ''; if(adminToken) sessionStorage.setItem('BX_ADMIN_TOKEN', adminToken); }
+    if(!adminToken) throw new Error('توکن مدیر وارد نشد');
+    const response = await fetch('/api/config', {method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+adminToken},body:JSON.stringify({name,volume_gb:Number(volume),expires_at:expire,config_text:configText,file_name:fileName,country:country.name,uid})});
+    const result = await response.json();
+    if(!response.ok) throw new Error(result.error || 'خطا در ساخت اشتراک');
+    let old = document.getElementById('bxSubLink'); if(old) old.remove();
+    const box = document.createElement('div'); box.id='bxSubLink'; box.style.cssText='margin-top:14px;padding:14px;border:1px solid var(--accent-dim);border-radius:10px;direction:rtl;word-break:break-all';
+    box.innerHTML='<b>لینک اشتراک اختصاصی</b><p style="margin:8px 0;color:var(--accent)"></p><button type="button" style="padding:9px 14px;border-radius:8px;border:0;background:var(--accent);font-weight:bold">کپی لینک</button><small style="display:block;margin-top:8px;color:var(--text-dim)">آمار تا زمان اتصال Agent واقعی WireGuard به‌صورت «دریافت نشده» نمایش داده می‌شود.</small>';
+    box.querySelector('p').textContent=result.url;
+    box.querySelector('button').onclick=()=>navigator.clipboard.writeText(result.url).then(()=>toast('لینک اشتراک کپی شد'));
+    document.getElementById('btnRow').after(box);
+    toast('کانفیگ و لینک اشتراک ساخته شد');
+  } catch(err) { toast(err.message || 'ساخت لینک ناموفق بود', true); }
+});
+
+function highlightConfig(text){
+  return text.split('\n').map(line=>{
+    if(line.startsWith('[')) return `<span class="c">${line}</span>`;
+    const eq = line.indexOf('=');
+    if(eq > -1){
+      const k = line.slice(0, eq);
+      const v = line.slice(eq);
+      return `<span class="k">${k}</span>${v}`;
+    }
+    return line;
+  }).join('\n');
+}
+
+function sanitizeFileName(name){
+  return name.replace(/[^a-zA-Z0-9آ-ی_\-\s]/g, '').trim().replace(/\s+/g, '_') || 'config';
+}
+
+function shakeField(id){
+  const el = document.getElementById(id);
+  el.style.borderColor = 'var(--danger)';
+  el.animate([{transform:'translateX(0)'},{transform:'translateX(-4px)'},{transform:'translateX(4px)'},{transform:'translateX(0)'}], {duration:300});
+  setTimeout(()=> el.style.borderColor = '', 800);
+}
+
+/* ============ DOWNLOAD ============ */
+document.getElementById('downloadBtn').addEventListener('click', ()=>{
+  if(!currentConfig) return;
+  let fileName = currentConfig.fileName;
+  // اطمینان مطلق از پسوند .conf، مستقل از نام واردشده توسط کاربر
+  if(!fileName.toLowerCase().endsWith('.conf')) fileName += '.conf';
+
+  // application/octet-stream باعث می‌شود مرورگر MIME/پسوند را حدس نزند یا تغییر ندهد
+  const blob = new Blob([currentConfig.configText], { type:'application/octet-stream' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = fileName; // حتماً با نام وارد شده و پسوند .conf
+  a.rel = 'noopener';
+  a.style.display = 'none';
+  document.body.appendChild(a);
+  a.click();
+  setTimeout(()=>{
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  }, 150);
+  toast(`فایل ${fileName} دانلود شد`);
+});
+
+/* ============ COPY ============ */
+document.getElementById('copyBtn').addEventListener('click', ()=>{
+  if(!currentConfig) return;
+  navigator.clipboard.writeText(currentConfig.configText).then(()=>{
+    toast('متن کانفیگ کپی شد');
+  });
+});
+
+/* ============ TOAST ============ */
+let toastTimer = null;
+function toast(msg, isError=false){
+  const t = document.getElementById('toast');
+  const m = document.getElementById('toastMsg');
+  m.textContent = msg;
+  t.style.borderColor = isError ? 'var(--danger)' : 'var(--accent-dim)';
+  t.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(()=> t.classList.remove('show'), 2600);
+}
+</script>
+</body>
+</html>
